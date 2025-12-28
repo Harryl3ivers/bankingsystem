@@ -1,5 +1,6 @@
 import sqlite3
 from decimal import Decimal
+from datetime import datetime
 
 def initialise_db(db_path = "bank.db"):
     conn = sqlite3.connect(db_path)
@@ -13,20 +14,20 @@ def initialise_db(db_path = "bank.db"):
     conn.commit()
     conn.close()
 
-def create_account(account_number, account_name, balance, created_at, db_path="bank.db"):
+def insert_account(db_path,account_number, account_name, balance):
     conn = sqlite3.connect(db_path)
     try:
         cursor = conn.cursor()
-        cursor.execute('''INSERT INTO accounts (account_number, account_name, balance, created_at))
+        cursor.execute('''INSERT INTO accounts (account_number, account_name, balance, created_at)
                        VALUES(?,?,?,?)''',
-                       (account_number, account_name, float(balance), created_at))
+                       (account_number, account_name, float(balance), datetime.now().isoformat()))
         conn.commit()
     except sqlite3.IntegrityError as e:
         raise ValueError(f"Account creation failed: {e}")
     finally:
         conn.close()
 
-def get_account(account_number,db_path="bank.db"):
+def get_account(db_path , account_number):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute('''SELECT account_number, account_name, balance, created_at FROM accounts WHERE account_number=?''',(account_number,))
@@ -36,6 +37,6 @@ def get_account(account_number,db_path="bank.db"):
         return {
             "account_number": row[0],
             "account_name": row[1],
-            "balance": Decimal(row[2]),
+            "balance": Decimal(str(row[2])),
             "created_at": row[3]
         }
