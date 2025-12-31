@@ -23,7 +23,7 @@ def insert_account(db_path,account_number, account_name, balance):
                        (account_number, account_name, float(balance), datetime.now().isoformat()))
         conn.commit()
     except sqlite3.IntegrityError as e:
-        raise ValueError(f"Account creation failed: {e}")
+        raise ValueError("Account already exists")
     finally:
         conn.close()
 
