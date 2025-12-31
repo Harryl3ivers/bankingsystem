@@ -43,13 +43,16 @@ def get_account(db_path , account_number):
 
 def get_balance(db_path, account_number):
     conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''SELECT balance FROM acccounts WHERE account_number=?''',(account_number))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return Decimal(str(row[0]))
-    return None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            '''SELECT balance FROM accounts WHERE account_number=?''',
+            (account_number,)
+        )
+        row = cursor.fetchone()
+        return Decimal(str(row[0])) if row else None
+    finally:
+        conn.close()
 
 def update_balance(db_path,account_number, new_balance):
     conn = sqlite3.connect(db_path)
@@ -58,4 +61,3 @@ def update_balance(db_path,account_number, new_balance):
                    (float(new_balance), account_number))
     conn.commit()
     conn.close()
-    
