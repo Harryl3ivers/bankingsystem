@@ -59,6 +59,10 @@ def test_withdraw_nonexistent_account(transaction_setup):
     
     with pytest.raises(ValueError, match="Account not found"):
         trans_mnger.withdraw("ACC999", Decimal('100.00'))
-     
-
-                                                                        
+    
+def test_withdraw_insufficient_funds(transaction_setup):
+    account, trans_mnger = transaction_setup
+    account.create_account("ACC2006","Isabella Moore",Decimal("250.00"))
+    with pytest.raises(ValueError, match="Insufficient funds"):
+        trans_mnger.withdraw("ACC2006",Decimal("300.00"))
+        
