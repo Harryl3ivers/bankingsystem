@@ -24,6 +24,11 @@ def test_deposite(transaction_setup):
     new_balance = trans_mnger.deposite("ACC2001",Decimal("200.00"))
     assert new_balance == Decimal("700.00")
 
+def test_deposite_nonexistent_account(transaction_setup):
+    _, trans_mnger = transaction_setup
+    with pytest.raises(ValueError, match="Account not found"):
+        trans_mnger.deposite("ACC999", Decimal('100.00'))
+
 def test_deposite_invalid_amount(transaction_setup):
     account, trans_mnger = transaction_setup
     account.create_account("ACC2003","Olivia Davis",Decimal("400.00"))
