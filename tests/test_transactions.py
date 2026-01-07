@@ -65,4 +65,82 @@ def test_withdraw_insufficient_funds(transaction_setup):
     account.create_account("ACC2006","Isabella Moore",Decimal("250.00"))
     with pytest.raises(ValueError, match="Insufficient funds"):
         trans_mnger.withdraw("ACC2006",Decimal("300.00"))
-        
+
+def test_transfer(transaction_setup):
+    account, trans_mnger = transaction_setup
+
+    account.create_account("ACC3001", "Mia Taylor", Decimal("1000.00"))
+    account.create_account("ACC3002", "Noah Anderson", Decimal("500.00"))
+
+    result = trans_mnger.transfer("ACC3001", "ACC3002", Decimal("300.00"))
+
+    assert result["from_new_balance"] == Decimal("700.00")
+    assert result["to_new_balance"] == Decimal("800.00")
+    assert result["amount"] == Decimal("300.00")
+
+def test_transfer_entire_balance(transaction_setup):
+    account,trans_mnger = transaction_setup
+    account.create_account("ACC3003","Ava Thomas",Decimal("600.00"))
+    account.create_account("ACC3004","Elijah Jackson",Decimal("400.00"))
+    result = trans_mnger.transfer("ACC3003","ACC3004",Decimal("600.00"))
+    assert result["from_new_balance"] == Decimal("0.00")
+    assert result["to_new_balance"] == Decimal("1000.00")
+
+def test_transfer_insufficient_funds(transaction_setup):
+    account,trans_mnger = transaction_setup
+    account.create_account("ACC3005","Charlotte White",Decimal("200.00"))
+    account.create_account("ACC3006","James Harris",Decimal("300.00"))
+    with pytest.raises(ValueError,match="Insufficient funds in the source account"):
+        trans_mnger.transfer("ACC3005","ACC3006",Decimal("250.00"))
+
+def test_transfer_same_account(transaction_setup):
+    account, trans_mnger = transaction_setup
+    account.create_account("ACC3007","Amelia Martin", Decimal("700.00"))
+    with pytest.raises(ValueError,match="Cannot transfer to the same account"):
+        trans_mnger.transfer("ACC3007","ACC3007",Decimal("100.00"))
+
+def test_transfer_nonexistent_account(transaction_setup):
+    account, trans_mnger = transaction_setup
+    account.create_account("ACC3008","Ethan Lee",Decimal("400.00"))
+    with pytest.raises(ValueError,match="One or both accounts not found"):
+        trans_mnger.transfer("ACC3008","ACC999",Decimal("50.00"))
+
+# def test_both_accounts_fail_atomcity(transaction_setup):
+#     account, trans_mnger = transaction_setup
+#     account.create_account
+
+def test_multiple_transfers(transaction_setup):
+    account, trans_mnger = transaction_setup
+    account.create_account("ACC3009","Logan Perez",Decimal("1000.00"))
+    account.create_account("ACC3010","Lucas Thompson",Decimal("400.00"))
+    trans_mnger.transfer("ACC3009","ACC3010",Decimal("200.00"))
+    trans_mnger.transfer("ACC3010","ACC3009",Decimal("140.00"))
+    acc1 = account.get_account("ACC3009")
+    acc2 = account.get_account("ACC3010")
+    assert acc1['balance'] == Decimal("940.00")
+    assert acc2['balance'] == Decimal("460.00")
+
+def test_conservation_of_money(transaction_setup):
+    account, trans_mnger = transaction_setup
+
+    # Arrange
+    account.create_account("ACC4001", "Sender", Decimal("1000.00"))
+    account.create_account("ACC4002", "Receiver", Decimal("500.00"))
+
+    initial_total = (
+        account.get_account("ACC4001")['balance'] +
+        account.get_account("ACC4002")['balance']
+    )
+
+    # Act
+    trans_mnger.transfer("ACC4001", "ACC4002", Decimal("200.00"))
+    trans_mnger.transfer("ACC4002", "ACC4001", Decimal("100.00"))
+    trans_mnger.transfer("ACC4001", "ACC4002", Decimal("50.00"))
+
+    # Assert
+    final_total = (
+        account.get_account("ACC4001")['balance'] +
+        account.get_account("ACC4002")['balance']
+    )
+
+    assert final_total == initial_total
