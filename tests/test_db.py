@@ -33,4 +33,18 @@ def test_insert_and_get_account(db_setup):
     assert account["created_at"] is not None
 
 
-    
+def test_insert_duplicate_account(db_setup):
+    insert_account(
+        db_setup,
+        "ACC5002",
+        "User One",
+        Decimal("500.00")
+    )
+
+    with pytest.raises(ValueError, match="Account already exists"):
+        insert_account(
+            db_setup,
+            "ACC5002",
+            "User Two",
+            Decimal("300.00")
+        )
