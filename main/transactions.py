@@ -1,6 +1,5 @@
 from decimal import Decimal
 from main.validator import Validator
-from main.db import initialise_db, insert_account, get_account, update_balance, get_balance
 import sqlite3
 
 
@@ -8,77 +7,128 @@ class Transaction:
     def __init__(self, db_path="bank.db"):
         self.validator = Validator()
         self.db_path = db_path
-    
-    def deposite(self, account_number, amount):
+
+    def deposit(self, account_number, amount):
         account_number = self.validator.account_number_validation(account_number)
         amount = self.validator.amount_validation(amount)
-        account = get_account(self.db_path, account_number)
-        if not account:
-            raise ValueError("Account not found")
-        
+
         conn = sqlite3.connect(self.db_path, isolation_level='IMMEDIATE')
         try:
-            old_balance = get_balance(self.db_path, account_number)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT balance FROM accounts WHERE account_number=?",
+                (account_number,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise ValueError("Account not found")
+
+            old_balance = Decimal(str(row[0]))
             new_balance = old_balance + amount
-            update_balance(self.db_path, account_number, new_balance)
+
+            cursor.execute(
+                "UPDATE accounts SET balance=? WHERE account_number=?",
+                (float(new_balance), account_number)
+            )
+
             conn.commit()
             return new_balance
-        except Exception as e:
+
+        except Exception:
             conn.rollback()
-            raise e
+            raise
         finally:
             conn.close()
-    
+
     def withdraw(self, account_number, amount):
         account_number = self.validator.account_number_validation(account_number)
         amount = self.validator.amount_validation(amount)
-        account = get_account(self.db_path, account_number)
-        if not account:
-            raise ValueError("Account not found")
-        
+
         conn = sqlite3.connect(self.db_path, isolation_level='IMMEDIATE')
         try:
-            old_balance = get_balance(self.db_path, account_number)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "SELECT balance FROM accounts WHERE account_number=?",
+                (account_number,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise ValueError("Account not found")
+
+            old_balance = Decimal(str(row[0]))
+
             if old_balance < amount:
                 raise ValueError("Insufficient funds")
+
             new_balance = old_balance - amount
-            update_balance(self.db_path, account_number, new_balance)
+
+            cursor.execute(
+                "UPDATE accounts SET balance=? WHERE account_number=?",
+                (float(new_balance), account_number)
+            )
+
             conn.commit()
             return new_balance
-        except Exception as e:
+
+        except Exception:
             conn.rollback()
-            raise e
+            raise
         finally:
             conn.close()
-    
+
     def transfer(self, from_account, to_account, amount):
         from_account = self.validator.account_number_validation(from_account)
         to_account = self.validator.account_number_validation(to_account)
         amount = self.validator.amount_validation(amount)
-        
+
         if from_account == to_account:
             raise ValueError("Cannot transfer to the same account")
-        
-        from_acc = get_account(self.db_path, from_account)
-        to_acc = get_account(self.db_path, to_account)
-        if not from_acc or not to_acc:
-            raise ValueError("One or both accounts not found")
-        
+
         conn = sqlite3.connect(self.db_path, isolation_level='IMMEDIATE')
         try:
-            from_balance = get_balance(self.db_path, from_account)
-            to_balance = get_balance(self.db_path, to_account)
-            
+            cursor = conn.cursor()
+
+            # Get source account
+            cursor.execute(
+                "SELECT balance FROM accounts WHERE account_number=?",
+                (from_account,)
+            )
+            from_row = cursor.fetchone()
+
+            # Get destination account
+            cursor.execute(
+                "SELECT balance FROM accounts WHERE account_number=?",
+                (to_account,)
+            )
+            to_row = cursor.fetchone()
+
+            if not from_row or not to_row:
+                raise ValueError("One or both accounts not found")
+
+            from_balance = Decimal(str(from_row[0]))
+            to_balance = Decimal(str(to_row[0]))
+
             if from_balance < amount:
                 raise ValueError("Insufficient funds in the source account")
-            
+
             new_from_balance = from_balance - amount
             new_to_balance = to_balance + amount
-            
-            update_balance(self.db_path, from_account, new_from_balance)
-            update_balance(self.db_path, to_account, new_to_balance)
+
+            # Update both accounts
+            cursor.execute(
+                "UPDATE accounts SET balance=? WHERE account_number=?",
+                (float(new_from_balance), from_account)
+            )
+
+            cursor.execute(
+                "UPDATE accounts SET balance=? WHERE account_number=?",
+                (float(new_to_balance), to_account)
+            )
+
             conn.commit()
-            
+
             return {
                 'from_account': from_account,
                 'to_account': to_account,
@@ -86,8 +136,9 @@ class Transaction:
                 'from_new_balance': new_from_balance,
                 'to_new_balance': new_to_balance
             }
-        except Exception as e:
+
+        except Exception:
             conn.rollback()
-            raise e
+            raise
         finally:
             conn.close()
