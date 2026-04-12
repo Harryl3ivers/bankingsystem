@@ -4,9 +4,9 @@ import sqlite3
 
 
 class Transaction:
-    def __init__(self, db_path="bank.db"):
+    def __init__(self, db):
         self.validator = Validator()
-        self.db_path = db_path
+        self.db = db
 
     def deposit(self, account_number, amount):
         account_number = self.validator.account_number_validation(account_number)

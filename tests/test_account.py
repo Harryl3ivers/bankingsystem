@@ -2,7 +2,7 @@ import pytest
 import os
 from decimal import Decimal
 from main.account import Account
-from main.db import *
+from main.db import BankDB
 
 @pytest.fixture
 def account_setup():
@@ -10,8 +10,12 @@ def account_setup():
     if os.path.exists(test_db):
         os.remove(test_db)
     
-    manager = Account(test_db)
+    db=BankDB(test_db)
+    manager = Account(db)
+    
+    
     yield manager
+    db.close()
 
     if os.path.exists(test_db):
         os.remove(test_db)
