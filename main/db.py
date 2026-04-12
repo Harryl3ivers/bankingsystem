@@ -2,62 +2,69 @@ import sqlite3
 from decimal import Decimal
 from datetime import datetime
 
-def initialise_db(db_path = "bank.db"):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS accounts (
-                   account_number TEXT PRIMARY KEY,
-                   account_name TEXT NOT NULL,
-                   balance REAL NOT NULL DEFAULT 0.0,
-                   created_at TEXT NOT NULL)
-                ''')
-    conn.commit()
-    conn.close()
 
-def insert_account(db_path,account_number, account_name, balance):
-    conn = sqlite3.connect(db_path)
-    try:
-        cursor = conn.cursor()
-        cursor.execute('''INSERT INTO accounts (account_number, account_name, balance, created_at)
-                       VALUES(?,?,?,?)''',
-                       (account_number, account_name, float(balance), datetime.now().isoformat()))
-        conn.commit()
-    except sqlite3.IntegrityError as e:
-        raise ValueError("Account already exists")
-    finally:
-        conn.close()
+class BankDB:
+    def __init__(self, db_path="bank.db"):
+        self.db_path = db_path
+        self.conn = sqlite3.connect(self.db_path)
+        self.cursor = self.conn.cursor()
+        self.initialise_db()
 
-def get_account(db_path , account_number):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''SELECT account_number, account_name, balance, created_at FROM accounts WHERE account_number=?''',(account_number,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return {
-            "account_number": row[0],
-            "account_name": row[1],
-            "balance": Decimal(str(row[2])),
-            "created_at": row[3]
-        }
+    def initialise_db(self):
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS accounts (
+                account_number TEXT PRIMARY KEY,
+                account_name TEXT NOT NULL,
+                balance REAL NOT NULL DEFAULT 0.0,
+                created_at TEXT NOT NULL
+            )
+        ''')
+        self.conn.commit()
 
-def get_balance(db_path, account_number):
-    conn = sqlite3.connect(db_path)
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            '''SELECT balance FROM accounts WHERE account_number=?''',
-            (account_number,)
-        )
-        row = cursor.fetchone()
+    def insert_account(self, account_number, account_name, balance):
+        try:
+            self.cursor.execute('''
+                INSERT INTO accounts (account_number, account_name, balance, created_at)
+                VALUES (?, ?, ?, ?)
+            ''', (
+                account_number,
+                account_name,
+                float(balance),
+                datetime.now().isoformat()
+            ))
+            self.conn.commit()
+        except sqlite3.IntegrityError:
+            raise ValueError("Account already exists")
+
+    def get_account(self, account_number):
+        self.cursor.execute('''
+            SELECT account_number, account_name, balance, created_at
+            FROM accounts
+            WHERE account_number=?
+        ''', (account_number,))
+        row = self.cursor.fetchone()
+
+        if row:
+            return {
+                "account_number": row[0],
+                "account_name": row[1],
+                "balance": Decimal(str(row[2])),
+                "created_at": row[3]
+            }
+        return None
+
+    def get_balance(self, account_number):
+        self.cursor.execute('''
+            SELECT balance FROM accounts WHERE account_number=?
+        ''', (account_number,))
+        row = self.cursor.fetchone()
         return Decimal(str(row[0])) if row else None
-    finally:
-        conn.close()
 
-def update_balance(db_path,account_number, new_balance):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''UPDATE accounts SET balance=? WHERE account_number=?''',
-                   (float(new_balance), account_number))
-    conn.commit()
-    conn.close()
+    def update_balance(self, account_number, new_balance):
+        self.cursor.execute('''
+            UPDATE accounts SET balance=? WHERE account_number=?
+        ''', (float(new_balance), account_number))
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
