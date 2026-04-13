@@ -16,7 +16,10 @@ class Account:
        
     
     def get_account(self, account_number):
-    #    account_number = self.validator.account_number_validation(account_number)
+    #    account_number = self.validator.account_number_validation(account_number) 
        return self.db.get_account(account_number)
+    '''just looks up records
+ doesn’t reject people for looking “wrong so doesnt need validator”'''
 
+ 
          
