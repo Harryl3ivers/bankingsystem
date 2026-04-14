@@ -13,7 +13,7 @@ class Transaction:
         amount = self.validator.amount_validation(amount)
         balance = self.db.get_balance(account_number)
         if balance is None:
-            raise ValueError("Acc not found")
+            raise ValueError("Account not found")
         new_balance = balance + amount
         self.db.update_balance(account_number,new_balance)
         return new_balance
@@ -26,9 +26,9 @@ class Transaction:
         amount = self.validator.amount_validation(amount)
         balance = self.db.get_balance(account_number)
         if balance is None:
-            raise ValueError("Acc not found")
+            raise ValueError("Account not found")
         if balance < amount:
-            raise ValueError("Insufficient  funds")
+            raise ValueError("Insufficient funds")
         new_balance = balance - amount
         self.db.update_balance(account_number,new_balance)
         return new_balance

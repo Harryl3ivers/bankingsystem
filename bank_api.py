@@ -17,13 +17,13 @@ def get_db():
 def get_account_service(db: BankDB = Depends(get_db)):
     return Account(db)
 
-
 def get_transaction_service(db: BankDB = Depends(get_db)):
     return Transaction(db)
 
 @app.post("/accounts/")
 def create_account(account_number: str, account_name: str, balance: float,
-                   service: Account = Depends(get_account_service)):
+                   db: BankDB = Depends(get_db)):
+    service = Account(db)
     try:
         return service.create_account(
             account_number, account_name, Decimal(balance)

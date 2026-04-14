@@ -4,6 +4,8 @@ from decimal import Decimal
 from main.transactions import Transaction
 from main.db import *
 from main.account import Account
+import gc
+import time
 
 @pytest.fixture
 def transaction_setup():
@@ -18,8 +20,11 @@ def transaction_setup():
     
 
     yield account, trans_mnger
+    db.close()
+    
     if os.path.exists(test_db):
         os.remove(test_db)
+    
 
 def test_deposit(transaction_setup):
     account, trans_mnger = transaction_setup

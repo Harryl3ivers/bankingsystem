@@ -9,6 +9,9 @@ class BankDB:
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
         self.initialise_db()
+    
+    def close(self):
+        self.conn.close()
 
     def initialise_db(self):
         self.cursor.execute('''
@@ -66,5 +69,4 @@ class BankDB:
         ''', (float(new_balance), account_number))
         self.conn.commit()
 
-    def close(self):
-        self.conn.close()
+    
