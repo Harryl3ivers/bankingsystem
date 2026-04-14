@@ -2,7 +2,7 @@ import pytest
 import os
 from decimal import Decimal
 from main.transactions import Transaction
-from main.db import *
+from main.db import BankDB
 from main.account import Account
 import threading
 
@@ -12,8 +12,9 @@ def concurrency_setup():
     if os.path.exists(test_db):
         os.remove(test_db)
     
-    account = Account(test_db)
-    trans_mnger = Transaction(test_db)
+    db = BankDB(test_db)
+    account = Account(db)
+    trans_mnger = Transaction(db)
     account.create_account("ACC3001","Ethan Taylor",Decimal("1000.00"))
     yield account, trans_mnger
     if os.path.exists(test_db):
